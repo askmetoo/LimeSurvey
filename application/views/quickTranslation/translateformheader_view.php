@@ -36,4 +36,20 @@ extract($viewData['translateformheader_view'][0]);
         <?php } ?>
         <?php $i = 0; ?>
     </ul>
+    <div class="tab-content">
 
+        <!-- here translatetabs_view and inside of them translatefields_view should be rendered.
+        The data for those is prepared in function displayUntranslatedFields in QuicktranslationController -->
+        <?php
+        foreach ($tab_names as $tab) {
+            $this->renderpartial('translatetabs_view', ['viewData' => $viewData]);
+        }
+        ?>
+    </div>
+    <p>
+        <input type='submit' class='standardbtn hidden' value='<?php eT("Save");?>' <?php if ($bReadOnly){?>disabled='disabled'<?php }?>/>
+    </p>
+</div>
+<?php
+    echo CHtml::closeTag('form');
+?>

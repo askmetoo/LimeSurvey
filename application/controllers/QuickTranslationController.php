@@ -164,11 +164,14 @@ class QuickTranslationController extends LSBaseController
     }
 
     /**
+     *
+     *
      * @param $quickTranslation \LimeSurvey\Models\Services\QuickTranslation the quick translation object
      * @param $tolang string language to translate to
      * @param $baselang  string the base language
      * @param $baselangdesc string the base language description
      * @param $tolangdesc string the language to translate description
+     *
      * @return array
      * @throws CException
      */
@@ -176,28 +179,33 @@ class QuickTranslationController extends LSBaseController
     {
         // Define aData
         $survey = $quickTranslation->getSurvey();
-        $aData['surveyid'] = $survey->sid;
-        $aData['tab_names'] = $quickTranslation->getTabNames();
-        $aData['tolang'] = $tolang;
-        $aData['baselang'] = $baselang;
-        $aData['baselangdesc'] = $baselangdesc;
-        $aData['tolangdesc'] = $tolangdesc;
+        $tabsViewData['surveyid'] = $survey->sid;
+        $tabsViewData['tab_names'] = $quickTranslation->getTabNames();
+        $tabsViewData['tolang'] = $tolang;
+        $tabsViewData['baselang'] = $baselang;
+        $tabsViewData['baselangdesc'] = $baselangdesc;
+        $tabsViewData['tolangdesc'] = $tolangdesc;
 
         //This is for the tab navbar
-        $aData['amTypeOptions'] = $quickTranslation->getAllTranslateFields();
+        $tabsViewData['amTypeOptions'] = $quickTranslation->getAllTranslateFields();
 
-        $aViewUrls['translateformheader_view'][] = $aData;
-
-        //Set the output as empty
-        $aViewUrls['output'] = '';
+        //this array will contain all necessary data for translatetabs_view
+        /*
+         * structure will be like
+         *
+         * $tabsViewData['tabname'] = [
+         *      'data1' => ''
+         *      ....
+         *      'tabFieldData = []
+         * ]
+         */
+        $tabsViewData['singleTabs'] = [];
 
         //iterate through all tabs and define content of each tab
-        foreach ($aData['tab_names'] as $tabName) {
+        foreach ($tabsViewData['tab_names'] as $tabName) {
+            $singleTabData = [];
             $amTypeOptions = $quickTranslation->setupTranslateFields($tabName);
-            // Setup form
-            $evenRow = false; //deprecated => using css
-
-            $all_fields_empty = true;
+            //$all_fields_empty = true;
 
             $resultbase = $quickTranslation->getTranslations($tabName, $baselang);
             $resultto =  $quickTranslation->getTranslations($tabName, $tolang);
@@ -206,7 +214,7 @@ class QuickTranslationController extends LSBaseController
             $associated = false;
             if (!empty($type2)) {
                 $associated = true;
-                //get type otions again again
+                //get type options again
                 $amTypeOptions2 = $quickTranslation->setupTranslateFields($type2);
                 $resultbase2 = $quickTranslation->getTranslations($tabName, $baselang);
                 $resultto2 = $quickTranslation->getTranslations($tabName, $tolang);
@@ -215,16 +223,15 @@ class QuickTranslationController extends LSBaseController
                 $resultto2 = $resultto;
             }
 
-            $aData['type'] = $tabName;
+            $singleTabData['type'] = $tabName;
 
             //always set first tab active
-            $aData['activeTab'] = $tabName === 'title';
-
-            $aViewUrls['output'] .= $this->renderPartial("translatetabs_view", $aData, true);
+            $singleTabData['activeTab'] = $tabName === 'title';
 
             //iterates through active record results depending on the tab
             $countResultBase = count($resultbase);
             for ($j = 0; $j < $countResultBase; $j++) {
+                $singleTabFieldsData = [];
                 $oRowfrom = $resultbase[$j];
                 $oResultBase2 = $resultbase2[$j];
                 $oResultTo = $resultto[$j];
@@ -273,16 +280,15 @@ class QuickTranslationController extends LSBaseController
 
                 $textform_length = strlen(trim($textfrom));
 
-                $all_fields_empty = !($textform_length > 0);
+                $singleTabFieldsData['all_fields_empty'] = !($textform_length > 0);
 
-                $aData = array_merge($aData, array(
+                $singleTabFieldsData['fieldData'] = array(
                     'textfrom' => $this->cleanup($textfrom),
                     'textfrom2' => $this->cleanup($textfrom2),
                     'textto' => $this->cleanup($textto),
                     'textto2' => $this->cleanup($textto2),
                     'rowfrom' => $aRowfrom,
                     'rowfrom2' => $aResultBase2,
-                    'evenRow' => $evenRow,
                     'gid' => $gid,
                     'qid' => $qid,
                     'amTypeOptions' => $amTypeOptions,
@@ -291,9 +297,8 @@ class QuickTranslationController extends LSBaseController
                     'type' => $tabName,
                     'type2' => $type2,
                     'associated' => $associated,
-                ));
-
-                $aData['translateFields'] = $this->displayTranslateFields(
+                );
+                $singleTabFieldsData['translateFields'] = $this->displayTranslateFields(
                     $survey->sid,
                     $gid,
                     $qid,
@@ -302,10 +307,10 @@ class QuickTranslationController extends LSBaseController
                     $textfrom,
                     $textto,
                     $j,
-                    $aRowfrom //todo: what happend here?
+                    $aRowfrom
                 );
                 if ($associated && strlen(trim($textfrom2)) > 0) {
-                    $aData['translateFields'] .= $this->displayTranslateFields(
+                    $singleTabFieldsData['translateFields'] .= $this->displayTranslateFields(
                         $survey->sid,
                         $gid,
                         $qid,
@@ -314,21 +319,16 @@ class QuickTranslationController extends LSBaseController
                         $textfrom2,
                         $textto2,
                         $j,
-                        $aResultBase2 //todo:  what happend here?
+                        $aResultBase2
                     );
                 }
-
-                $aViewUrls['output'] .= $this->renderPartial("translatefields_view", $aData, true);
+                $singleTabData['singleTabFieldsData'][] = $singleTabFieldsData;
             } // end for
 
-            $aData['all_fields_empty'] = $all_fields_empty;
-            $aData['translateFieldsFooter'] = $this->displayTranslateFieldsFooter();
-            $aData['bReadOnly'] = !Permission::model()->hasSurveyPermission($survey->sid, 'translations', 'update');
-            $aViewUrls['output'] .= $this->renderPartial("translatefieldsfooter_view", $aData, true);
+            $tabsViewData['bReadOnly'] = !Permission::model()->hasSurveyPermission($survey->sid, 'translations', 'update');
+            $tabsViewData['singleTabs'][] = $singleTabData;
         } // end foreach
-        // Submit buttonrender
-        $aViewUrls['translatefooter_view'][] = $aData;
-        return $aViewUrls;
+        return $tabsViewData;
     }
 
     /**
@@ -479,16 +479,6 @@ class QuickTranslationController extends LSBaseController
     }
 
     /**
-     * Formats and displays footer of translation fields table
-     * @return string $translateoutput
-     */
-    private function displayTranslateFieldsFooter()
-    {
-        $translateoutput = "</table>";
-        return $translateoutput;
-    }
-
-    /**
      * menuItem() creates a menu item with text and image in the admin screen menus
      * @param string $jsMenuText
      * @param string $menuImageText
@@ -496,6 +486,7 @@ class QuickTranslationController extends LSBaseController
      * @param string $scriptname
      * @return string
      */
+    /*
     private function menuItem($jsMenuText, $menuImageText, $menuIconClasses, $scriptname)
     {
         //$imageurl = Yii::app()->getConfig("adminimageurl");
@@ -506,12 +497,13 @@ class QuickTranslationController extends LSBaseController
             'onclick' => "window.open('{$scriptname}', '_top')"
         ));
         return $menuitem;
-    }
+    }*/
 
     /**
      * menuSeparator() creates a separator bar in the admin screen menus
      * @return string
      */
+    /*
     private function menuSeparator()
     {
 
@@ -520,6 +512,7 @@ class QuickTranslationController extends LSBaseController
         $image = CHtml::image($imageurl . "/separator.gif", '');
         return $image;
     }
+    */
 
     /**
      *

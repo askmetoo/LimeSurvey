@@ -1,9 +1,9 @@
-          </div>
-          <p>
-            <input type='submit' class='standardbtn hidden' value='<?php eT("Save");?>' <?php if ($bReadOnly){?>disabled='disabled'<?php }?>/>
-          </p>
-        </div>
-      </form>
+<?php
+
+//this one went into other views
+
+?>
+
       </div>
     </div>
   </div>

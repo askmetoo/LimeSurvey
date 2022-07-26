@@ -65,15 +65,14 @@
                 <?php eT("Translate survey");?>
             </h4>
         </div>
-   <!--  </div> this must be set somewhere-->
-        <!-- translateformheader_view -->
+
         <?php
             $this->renderpartial('translateformheader_view', ['viewData' => $viewData]);
         ?>
 
-    <div class="tab-content">
+    </div>
 
 
 
-</div> <--! close div sidebody -->
+</div> <!-- close div sidebody -->
 <?php

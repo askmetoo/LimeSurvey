@@ -201,7 +201,9 @@ class QuickTranslation
 
     /**
      * Creates a customised array with database information for use by survey translation.
-     * This array structure is the base for the whole algorithm. Each returned array consists of the following information
+     * This array structure is the base for the whole algorithm.
+     * Each returned array consists of the following information
+     *
      *  type -->
      *  dbColumn  -->  the name of the db column where to find the
      *  id1  -->
@@ -229,10 +231,10 @@ class QuickTranslation
                     'id2' => '', //todo: description... what is id2?
                     'gid' => false,
                     'qid' => false,
-                    'description' => gT("Survey title and description"),
+                    'description' => gT("Survey title and description"), //this is the tab title
                     'HTMLeditorType' => "title",
                     'HTMLeditorDisplay' => "Inline",
-                    'associated' => "description"
+                    'associated' => "description" //this is the second field of the tab content
                 );
                 break;
 
