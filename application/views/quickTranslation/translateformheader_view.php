@@ -2,7 +2,7 @@
 
 /* @var $viewData array */
 
-extract($viewData['translateformheader_view'][0]);
+extract($viewData);
 
 ?>
 <div id="translationloading" style="width: 100%; font-weight: bold; color: #000; text-align: center;">
@@ -41,8 +41,14 @@ extract($viewData['translateformheader_view'][0]);
         <!-- here translatetabs_view and inside of them translatefields_view should be rendered.
         The data for those is prepared in function displayUntranslatedFields in QuicktranslationController -->
         <?php
-        foreach ($tab_names as $tab) {
-            $this->renderpartial('translatetabs_view', ['viewData' => $viewData]);
+
+        foreach ($singleTabs as $tabData) {
+            //find the correct singleTabdata
+            $this->renderpartial('translatetabs_view', [
+                'baselangdesc' => $baselangdesc,
+                'tolangdesc' => $tolangdesc,
+                'tabData' => $tabData
+            ]);
         }
         ?>
     </div>

@@ -3,7 +3,7 @@
 /* @var $survey Survey */
 /* @var $languageToTranslate  string  e.g. 'de' 'it' ... */
 /* @var $additionalLanguages array */
-/* @var $viewData array */
+/* @var $viewData array contains all necessary data for tabs and it content*/
 
 ?>
 
