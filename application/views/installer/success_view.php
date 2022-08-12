@@ -35,7 +35,7 @@
          */ ?>
 
         <div class="thumbnail" style="padding: 1em;">
-            <img src="<?php echo Yii::app()->baseUrl; ?>/installer/images/comfortupdate-logo.png" alt="ComfortUpdate Logo">
+            <img style="width: 50%;" src="<?php echo Yii::app()->baseUrl; ?>/installer/images/comfortupdate-logo.png" alt="ComfortUpdate Logo">
             <div class="caption">
                 <h3><?= gT("ComfortUpdate"); ?></h3>
                 <p>
