@@ -47,7 +47,7 @@
                     </ul>
                 </p>
                 <p class="text-center">
-                    <a href="https://community.limesurvey.org/comfort-update-extension/" class="btn btn-primary btn-block" role="button">
+                    <a href="https://community.limesurvey.org/comfort-update-extension/" class="btn btn-primary btn-block" role="button" target="_blank">
                         <?= gT("Free trial"); ?>
                     </a>
                 </p>
