@@ -229,8 +229,8 @@ class QuickTranslation
                     'dbColumn' => 'surveyls_title',
                     'id1' => '', //todo: description... what is id1?
                     'id2' => '', //todo: description... what is id2?
-                    'gid' => false,
-                    'qid' => false,
+                    'gid' => false,  //boolean value to indicate if used or not
+                    'qid' => false,  //boolean value to indicate if used or not
                     'description' => gT("Survey title and description"), //this is the tab title
                     'HTMLeditorType' => "title",
                     'HTMLeditorDisplay' => "Inline",

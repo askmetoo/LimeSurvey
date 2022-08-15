@@ -58,7 +58,6 @@ class QuickTranslationController extends LSBaseController
         $action = Yii::app()->getRequest()->getParam('action');
         $actionvalue = Yii::app()->getRequest()->getPost('actionvalue');
 
-        //todo: is this really needed when it is a own action now ...?
         if ($action == "ajaxtranslategoogleapi") {
             echo $this->translateGoogleApi();
             return;
@@ -72,7 +71,6 @@ class QuickTranslationController extends LSBaseController
             $languageToTranslate = $additionalLanguages[0];
         }
 
-        // TODO need to do some validation here on surveyid
         $survey_title = $oSurvey->defaultlanguage->surveyls_title;
         $supportedLanguages = getLanguageData(false, Yii::app()->session['adminlang']);
 
@@ -103,7 +101,7 @@ class QuickTranslationController extends LSBaseController
         $aData['sidemenu']['state'] = false;
         $aData['title_bar']['title'] = $oSurvey->currentLanguageSettings->surveyls_title . " (" . gT("ID") . ":" . $surveyid . ")";
         if (Permission::model()->hasSurveyPermission($surveyid, 'translations', 'update')) {
-            $aData['surveybar']['savebutton']['form'] = 'frmeditgroup';
+            $aData['surveybar']['savebutton']['form'] = 'translateform';
             $aData['surveybar']['closebutton']['url'] = 'surveyAdministration/view/surveyid/' . $surveyid; // Close button
             $aData['topBar']['showSaveButton'] = true;
         }
@@ -205,7 +203,6 @@ class QuickTranslationController extends LSBaseController
         foreach ($tabsViewData['tab_names'] as $tabName) {
             $singleTabData = [];
             $amTypeOptions = $quickTranslation->setupTranslateFields($tabName);
-            //$all_fields_empty = true;
 
             $resultbase = $quickTranslation->getTranslations($tabName, $baselang);
             $resultto =  $quickTranslation->getTranslations($tabName, $tolang);
@@ -275,8 +272,8 @@ class QuickTranslationController extends LSBaseController
                     $textto2 = $aResultTo2[$amTypeOptions2["dbColumn"]];
                 }
 
-                $gid = ($amTypeOptions["gid"] == true) ? $gid = $aRowfrom['gid'] : null;
-                $qid = ($amTypeOptions["qid"] == true) ? $qid = $aRowfrom['qid'] : null;
+                $gid = ($amTypeOptions["gid"] == true) ? $aRowfrom['gid'] : null;
+                $qid = ($amTypeOptions["qid"] == true) ? $aRowfrom['qid'] : null;
 
                 $textform_length = strlen(trim($textfrom));
 
@@ -298,29 +295,32 @@ class QuickTranslationController extends LSBaseController
                     'type2' => $type2,
                     'associated' => $associated,
                 );
-                $singleTabFieldsData['translateFields'] = $this->displayTranslateFields(
-                    $survey->sid,
-                    $gid,
-                    $qid,
-                    $tabName,
-                    $amTypeOptions,
-                    $textfrom,
-                    $textto,
-                    $j,
-                    $aRowfrom
-                );
+                $singleTabFieldsData['translateFields'] = [];
+                $singleTabFieldsData['translateFields'][] = [
+                    'surveyId' => $survey->sid,
+                    'gid'      => $gid,
+                    'qid'      => $qid,
+                    'type'  => $tabName,
+                    'amTypeOptions' => $amTypeOptions,
+                    'textfrom'      => $textfrom,
+                    'textto'        => $textto,
+                    'j'             => $j,
+                    'rowfrom'      => $aRowfrom,
+                    'nrows' => max($this->calcNRows($textfrom), $this->calcNRows($textto))
+                ];
                 if ($associated && strlen(trim($textfrom2)) > 0) {
-                    $singleTabFieldsData['translateFields'] .= $this->displayTranslateFields(
-                        $survey->sid,
-                        $gid,
-                        $qid,
-                        $type2,
-                        $amTypeOptions2,
-                        $textfrom2,
-                        $textto2,
-                        $j,
-                        $aResultBase2
-                    );
+                    $singleTabFieldsData['translateFields'][] = [
+                        'surveyId' => $survey->sid,
+                        'gid'      => $gid,
+                        'qid'      => $qid,
+                        'type'  => $type2,
+                        'amTypeOptions' => $amTypeOptions2,
+                        'textfrom'      => $textfrom2,
+                        'textto'        => $textto2,
+                        'j'             => $j,
+                        'rowfrom'      => $aResultBase2,
+                        'nrows' => max($this->calcNRows($textfrom2), $this->calcNRows($textto2))
+                    ];
                 }
                 $singleTabData['singleTabFieldsData'][] = $singleTabFieldsData;
             } // end for
@@ -352,94 +352,13 @@ class QuickTranslationController extends LSBaseController
     }
 
     /**
-     * Formats and displays translation fields (base language as well as to language)
+     * This is used in the view file translateFieldData.
      *
-     * @param string $iSurveyID Survey id
-     * @param string $gid Group id
-     * @param string $qid Question id
-     * @param string $type Type of database field that is being translated, e.g. title, question, etc.
-     * @param array $amTypeOptions Array containing options associated with each $type
-     * @param string $textfrom The text to be translated in source language
-     * @param string $textto The text to be translated in target language
-     * @param integer $i Counter
-     * @param array $rowfrom Contains current row of database query
-     *
-     * @return string $translateoutput
-     */
-    private function displayTranslateFields(
-        $iSurveyID,
-        $gid,
-        $qid,
-        $type,
-        $amTypeOptions,
-        $textfrom,
-        $textto,
-        $i,
-        $rowfrom
-    ) {
-        $translateoutput = "<tr>";
-        $value1 = (!empty($amTypeOptions["id1"])) ? $rowfrom[$amTypeOptions["id1"]] : "";
-        $value2 = (!empty($amTypeOptions["id2"])) ? $rowfrom[$amTypeOptions["id2"]] : "";
-        $iScaleID = (!empty($amTypeOptions["scaleid"])) ? $rowfrom[$amTypeOptions["scaleid"]] : "";
-        // Display text in original language
-        // Display text in foreign language. Save a copy in type_oldvalue_i to identify changes before db update
-        if ($type == 'answer') {
-            $translateoutput .= "<td class='col-sm-2'>" . htmlspecialchars($rowfrom['answer']) . " (" . $rowfrom['qid'] . ") </td>";
-        }
-        if ($type == 'question_help' || $type == 'question') {
-            $translateoutput .= "<td class='col-sm-2'>" . htmlspecialchars($rowfrom['title']) . " ({$rowfrom['qid']}) </td>";
-        } elseif ($type == 'subquestion') {
-            $translateoutput .= "<td class='col-sm-2'>" . htmlspecialchars($rowfrom['parent']['title']) . " ({$rowfrom['parent']['qid']}) </td>";
-        }
-
-        $translateoutput .= "<td class='_from_ col-sm-5' id='" . $type . "_from_" . $i . "'><div class='question-text-from'>"
-            . showJavaScript($textfrom)
-            . "</div></td>";
-
-        $translateoutput .= "<td class='col-sm-5'>";
-
-        $translateoutput .= CHtml::hiddenField("{$type}_id1_{$i}", $value1);
-        $translateoutput .= CHtml::hiddenField("{$type}_id2_{$i}", $value2);
-        if (is_numeric($iScaleID)) {
-            $translateoutput .= CHtml::hiddenField("{$type}_scaleid_{$i}", $iScaleID);
-        }
-        $nrows = max($this->calcNRows($textfrom), $this->calcNRows($textto));
-        $translateoutput .= CHtml::hiddenField("{$type}_oldvalue_{$i}", $textto);
-
-        $aDisplayOptions = array(
-            'class' => 'col-sm-10',
-            'cols' => '75',
-            'rows' => $nrows,
-            'readonly' => !Permission::model()->hasSurveyPermission($iSurveyID, 'translations', 'update')
-        );
-        if ($type == 'group') {
-            $aDisplayOptions['maxlength'] = 100;
-        }
-
-        $translateoutput .= CHtml::textArea("{$type}_newvalue_{$i}", $textto, $aDisplayOptions);
-        $htmleditor_data = array(
-            "edit" . $type,
-            $type . "_newvalue_" . $i,
-            htmlspecialchars($textto),
-            $iSurveyID,
-            $gid,
-            $qid,
-            "translate" . $amTypeOptions["HTMLeditorType"]
-        );
-        $translateoutput .= $this->loadEditor($amTypeOptions, $htmleditor_data);
-
-        $translateoutput .= "</td>";
-        $translateoutput .= "</tr>";
-
-        return $translateoutput;
-    }
-
-    /**
      * @param $htmleditor
      * @param string[] $aData
      * @return mixed
      */
-    private function loadEditor($htmleditor, $aData)
+    protected function loadEditor($htmleditor, $aData)
     {
         $editor_function = "";
         $displayType = strtolower($htmleditor["HTMLeditorDisplay"]);
@@ -477,42 +396,6 @@ class QuickTranslationController extends LSBaseController
 
         return $nrows_newline + $nrows_char;
     }
-
-    /**
-     * menuItem() creates a menu item with text and image in the admin screen menus
-     * @param string $jsMenuText
-     * @param string $menuImageText
-     * @param string $menuIconClasses
-     * @param string $scriptname
-     * @return string
-     */
-    /*
-    private function menuItem($jsMenuText, $menuImageText, $menuIconClasses, $scriptname)
-    {
-        //$imageurl = Yii::app()->getConfig("adminimageurl");
-
-        //$img_tag = CHtml::image($imageurl . "/" . $menuImageFile, $jsMenuText, array('name'=>$menuImageText));
-        $icon_tag = '<span class="' . $menuIconClasses . '"></span>' . $jsMenuText;
-        $menuitem = CHtml::link($icon_tag, '#', array(
-            'onclick' => "window.open('{$scriptname}', '_top')"
-        ));
-        return $menuitem;
-    }*/
-
-    /**
-     * menuSeparator() creates a separator bar in the admin screen menus
-     * @return string
-     */
-    /*
-    private function menuSeparator()
-    {
-
-        $imageurl = Yii::app()->getConfig("adminimageurl");
-
-        $image = CHtml::image($imageurl . "/separator.gif", '');
-        return $image;
-    }
-    */
 
     /**
      *

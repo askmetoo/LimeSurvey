@@ -45,10 +45,9 @@ extract($tabData);
             foreach ($singleTabFieldsData as $fieldData) {
                 $textfrom = $fieldData['fieldData']['textfrom'];
                 if (strlen(trim((string)$textfrom)) > 0) {
-                    if (extension_loaded('tidy')) {
-                        echo tidy_repair_string($fieldData['translateFields'], array(), 'utf8');
-                    } else {
-                        echo $fieldData['translateFields'];
+                    //there could be two fields ...
+                    foreach ($fieldData['translateFields'] as $field) {
+                        $this->renderPartial('translateFieldData', $field);
                     }
                 } else { ?>
                     <input type='hidden' name='<?php echo $type; ?>_newvalue[<?php echo $i; ?>]'
